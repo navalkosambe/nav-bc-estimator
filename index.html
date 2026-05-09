@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAV → BC Upgrade Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f3;
+    --bg-card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-muted: #6b6b6b;
+    --rule: #e8e4db;
+    --accent: #c8553d;
+    --accent-soft: #f4e4e0;
+    --green: #588157;
+    --amber: #c89826;
+    --red: #b04444;
+    --radius: 4px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+  header {
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 32px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 42px;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    line-height: 1.05;
+  }
+  h1 .arrow {
+    color: var(--accent);
+    font-style: italic;
+    font-weight: 400;
+  }
+  .subtitle {
+    color: var(--ink-muted);
+    font-size: 15px;
+    max-width: 640px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .card .desc {
+    color: var(--ink-muted);
+    margin: 0 0 24px;
+    font-size: 13px;
+  }
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 280px; }
+  label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  input[type="text"], input[type="password"] {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--ink);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: white;
+  }
+  .dropzones { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 720px) { .dropzones { grid-template-columns: 1fr; } }
+  .drop {
+    border: 2px dashed var(--rule);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: var(--bg);
+  }
+  .drop:hover, .drop.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .drop.has-file {
+    border-style: solid;
+    border-color: var(--green);
+    background: #f3f7f2;
+  }
+  .drop label.head {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .drop .filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    word-break: break-all;
+    margin-top: 6px;
+  }
+  .drop .filemeta {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+  .drop input[type="file"] { display: none; }
+
+  .actions { margin-top: 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 20px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    letter-spacing: 0.01em;
+  }
+  button.primary {
+    background: var(--ink);
+    color: white;
+  }
+  button.primary:hover:not(:disabled) { background: var(--accent); }
+  button.primary:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--rule);
+  }
+  button.ghost:hover { color: var(--ink); border-color: var(--ink); }
+
+  .progress {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--rule);
+    display: none;
+  }
+  .progress.active { display: block; }
+  .step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .step .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--rule);
+    flex-shrink: 0;
+  }
+  .step.active { color: var(--ink); font-weight: 500; }
+  .step.active .dot { background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
+  .step.done { color: var(--green); }
+  .step.done .dot { background: var(--green); }
+  .step.error { color: var(--red); }
+  .step.error .dot { background: var(--red); }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.2s ease-out;
+  }
+
+  .error-banner {
+    background: #fdf0ee;
+    border: 1px solid #f1c4bd;
+    color: var(--red);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .error-banner.active { display: block; }
+
+  /* Results */
+  .results { display: none; }
+  .results.active { display: block; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .stat {
+    padding: 16px;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+  .stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .stat .value {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat.highlight .value { color: var(--accent); }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    margin-top: 16px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--bg);
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+  th:hover { color: var(--ink); }
+  th.sorted-asc::after { content: ' ↑'; color: var(--accent); }
+  th.sorted-desc::after { content: ' ↓'; color: var(--accent); }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  td.name { font-family: 'Inter', sans-serif; font-size: 13px; }
+  td.numeric { text-align: right; }
+  tr:hover td { background: var(--bg); }
+
+  .bracket-Low { color: var(--green); font-weight: 500; }
+  .bracket-Medium { color: var(--amber); font-weight: 500; }
+  .bracket-High { color: var(--accent); font-weight: 600; }
+  .bracket-Rewrite { color: var(--red); font-weight: 700; }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar input.filter {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    background: white;
+  }
+  .toolbar input.filter:focus { outline: none; border-color: var(--accent); }
+
+  .footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>NAV <span class="arrow">→</span> Business Central<br>Upgrade Estimator</h1>
+    <p class="subtitle">
+      Upload a NAV Base Object export and a Client All Objects export. Files stream
+      directly to Azure Blob Storage — no size limit. Estimate is calculated server-side.
+    </p>
+  </header>
+
+  <div class="card">
+    <h2>Configuration</h2>
+    <p class="desc">Stored only in this browser session. Endpoints from your Azure Function App.</p>
+    <div class="row">
+      <div class="field">
+        <label for="getUrl">Get Upload URLs Endpoint</label>
+        <input type="text" id="getUrl"
+               placeholder="https://your-func.azurewebsites.net/api/GetUploadUrls">
+      </div>
+      <div class="field">
+        <label for="processUrl">Process Blobs Endpoint</label>
+        <input type="text" id="processUrl"
+               placeholder="https://your-func.azurewebsites.net/api/ProcessBlobs">
+      </div>
+      <div class="field">
+        <label for="key">Function Key</label>
+        <input type="password" id="key" placeholder="x-functions-key">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Files</h2>
+    <p class="desc">Drag & drop, or click to browse. NAV <code>.txt</code> object exports.</p>
+
+    <div class="dropzones">
+      <div class="drop" id="dropBase">
+        <input type="file" id="baseFile" accept=".txt">
+        <label class="head">NAV Base Objects</label>
+        <div class="filename" id="baseLabel">Drop file or click to browse</div>
+        <div class="filemeta" id="baseMeta"></div>
+      </div>
+      <div class="drop" id="dropClient">
+        <input type="file" id="clientFile" accept=".txt">
+        <label class="head">Client All Objects</label>
+        <div class="filename" id="clientLabel">Drop file or click to browse</div>
+        <div class="filemeta" id="clientMeta"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="runBtn" disabled>Run Estimate</button>
+      <button class="ghost" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="step" id="step1"><span class="dot"></span><span class="label">Requesting upload URLs</span></div>
+      <div class="step" id="step2"><span class="dot"></span><span class="label">Uploading base file</span><div class="progress-bar"><div id="bar2"></div></div></div>
+      <div class="step" id="step3"><span class="dot"></span><span class="label">Uploading client file</span><div class="progress-bar"><div id="bar3"></div></div></div>
+      <div class="step" id="step4"><span class="dot"></span><span class="label">Processing files (this can take several minutes for large solutions)</span></div>
+    </div>
+
+    <div class="error-banner" id="errBanner"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="card">
+      <h2>Summary</h2>
+      <p class="desc" id="summaryMeta"></p>
+      <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Object Detail</h2>
+      <p class="desc">Click a column header to sort. Bracket: Low &lt;10%, Medium 10–40%, High 40–75%, Rewrite &gt;75%.</p>
+      <div class="toolbar">
+        <input class="filter" id="filter" placeholder="Filter by type, ID, or name…">
+        <button class="ghost" id="csvBtn">Download CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table id="detailTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>NAV → BC Upgrade Estimator · runs in your browser, processes in Azure</span>
+    <span id="versionTag">v1.0</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ----------------------- Persistence (just config, never key)
+  const LS = {
+    get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  const els = {
+    getUrl: document.getElementById('getUrl'),
+    processUrl: document.getElementById('processUrl'),
+    key: document.getElementById('key'),
+    baseFile: document.getElementById('baseFile'),
+    clientFile: document.getElementById('clientFile'),
+    dropBase: document.getElementById('dropBase'),
+    dropClient: document.getElementById('dropClient'),
+    baseLabel: document.getElementById('baseLabel'),
+    clientLabel: document.getElementById('clientLabel'),
+    baseMeta: document.getElementById('baseMeta'),
+    clientMeta: document.getElementById('clientMeta'),
+    runBtn: document.getElementById('runBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    progress: document.getElementById('progress'),
+    err: document.getElementById('errBanner'),
+    results: document.getElementById('results'),
+    summaryGrid: document.getElementById('summaryGrid'),
+    summaryMeta: document.getElementById('summaryMeta'),
+    table: document.getElementById('detailTable'),
+    filter: document.getElementById('filter'),
+    csvBtn: document.getElementById('csvBtn'),
+  };
+
+  els.getUrl.value = LS.get('estimator.getUrl');
+  els.processUrl.value = LS.get('estimator.processUrl');
+  els.getUrl.addEventListener('change', () => LS.set('estimator.getUrl', els.getUrl.value.trim()));
+  els.processUrl.addEventListener('change', () => LS.set('estimator.processUrl', els.processUrl.value.trim()));
+
+  // ----------------------- Drop zones
+  function setupDrop(zone, input, labelEl, metaEl, onChange) {
+    zone.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') input.click(); });
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        handlePicked(zone, input.files[0], labelEl, metaEl);
+        onChange();
+      }
+    });
+    input.addEventListener('change', () => {
+      if (input.files.length) {
+        handlePicked(zone, input.files[0], labelEl, metaEl);
+        onChange();
+      }
+    });
+  }
+
+  function handlePicked(zone, file, labelEl, metaEl) {
+    zone.classList.add('has-file');
+    labelEl.textContent = file.name;
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    metaEl.textContent = `${mb} MB · ${file.type || 'text/plain'}`;
+  }
+
+  function refreshRunBtn() {
+    const ok = els.baseFile.files.length && els.clientFile.files.length
+            && els.getUrl.value.trim() && els.processUrl.value.trim() && els.key.value.trim();
+    els.runBtn.disabled = !ok;
+  }
+
+  setupDrop(els.dropBase, els.baseFile, els.baseLabel, els.baseMeta, refreshRunBtn);
+  setupDrop(els.dropClient, els.clientFile, els.clientLabel, els.clientMeta, refreshRunBtn);
+  ['getUrl','processUrl','key'].forEach(id => document.getElementById(id).addEventListener('input', refreshRunBtn));
+
+  els.resetBtn.addEventListener('click', () => {
+    els.baseFile.value = '';
+    els.clientFile.value = '';
+    els.dropBase.classList.remove('has-file');
+    els.dropClient.classList.remove('has-file');
+    els.baseLabel.textContent = 'Drop file or click to browse';
+    els.clientLabel.textContent = 'Drop file or click to browse';
+    els.baseMeta.textContent = '';
+    els.clientMeta.textContent = '';
+    els.progress.classList.remove('active');
+    els.results.classList.remove('active');
+    els.err.classList.remove('active');
+    refreshRunBtn();
+  });
+
+  // ----------------------- Step state helpers
+  function setStep(id, state, text) {
+    const s = document.getElementById(id);
+    s.classList.remove('active','done','error');
+    if (state) s.classList.add(state);
+    if (text) s.querySelector('.label').textContent = text;
+  }
+  function setBar(id, pct) {
+    document.getElementById(id).style.width = `${Math.min(100, Math.max(0, pct))}%`;
+  }
+  function showError(msg) {
+    els.err.textContent = msg;
+    els.err.classList.add('active');
+  }
+  function clearError() { els.err.classList.remove('active'); }
+
+  // ----------------------- Main flow
+  els.runBtn.addEventListener('click', runEstimate);
+
+  async function runEstimate() {
+    clearError();
+    els.results.classList.remove('active');
+    els.progress.classList.add('active');
+    els.runBtn.disabled = true;
+
+    const getUrl = els.getUrl.value.trim();
+    const processUrl = els.processUrl.value.trim();
+    const key = els.key.value.trim();
+    const baseFile = els.baseFile.files[0];
+    const clientFile = els.clientFile.files[0];
+
+    try {
+      // 1. Get SAS URLs
+      setStep('step1', 'active');
+      ['step2','step3','step4'].forEach(s => setStep(s, ''));
+      setBar('bar2', 0); setBar('bar3', 0);
+
+      const sasResp = await fetch(getUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-functions-key': key },
+        body: '{}'
+      });
+      if (!sasResp.ok) {
+        const t = await sasResp.text();
+        throw new Error(`GetUploadUrls failed (HTTP ${sasResp.status}): ${t}`);
+      }
+      const sas = await sasResp.json();
+      setStep('step1', 'done');
+
+      // 2. Upload base
+      setStep('step2', 'active');
+      await uploadFileWithProgress(sas.baseBlob.uploadUrl, baseFile, (p) => setBar('bar2', p));
+      setStep('step2', 'done');
+
+      // 3. Upload client
+      setStep('step3', 'active');
+      await uploadFileWithProgress(sas.clientBlob.uploadUrl, clientFile, (p) => setBar('bar3', p));
+      setStep('step3', 'done');
+
+      // 4. Process
+      setStep('step4', 'active');
+      const procResp = await fetch(processUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-functions-key': key },
+        body: JSON.stringify({
+          runId: sas.runId,
+          baseBlobName: sas.baseBlob.name,
+          clientBlobName: sas.clientBlob.name
+        })
+      });
+      if (!procResp.ok) {
+        const t = await procResp.text();
+        throw new Error(`ProcessBlobs failed (HTTP ${procResp.status}): ${t}`);
+      }
+      const result = await procResp.json();
+      setStep('step4', 'done');
+
+      renderResults(result, baseFile, clientFile);
+    } catch (e) {
+      const failingStep = ['step1','step2','step3','step4']
+        .find(id => document.getElementById(id).classList.contains('active'));
+      if (failingStep) setStep(failingStep, 'error');
+      showError(e.message || String(e));
+    } finally {
+      els.runBtn.disabled = false;
+    }
+  }
+
+  function uploadFileWithProgress(url, file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', url);
+      xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+      xhr.setRequestHeader('Content-Type', 'text/plain; charset=utf-8');
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+      });
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress(100);
+          resolve();
+        } else {
+          reject(new Error(`Upload failed (HTTP ${xhr.status}): ${xhr.responseText || xhr.statusText}`));
+        }
+      });
+      xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+      xhr.send(file);
+    });
+  }
+
+  // ----------------------- Results rendering
+  let currentRows = [];
+  let currentSort = { col: 'pctChanged', dir: 'desc' };
+
+  function renderResults(result, baseFile, clientFile) {
+    const s = result.stats;
+    els.results.classList.add('active');
+
+    const baseMb = (baseFile.size / (1024*1024)).toFixed(1);
+    const clientMb = (clientFile.size / (1024*1024)).toFixed(1);
+    els.summaryMeta.textContent =
+      `${baseFile.name} (${baseMb} MB) vs ${clientFile.name} (${clientMb} MB) · run ${result.runId || ''}`;
+
+    els.summaryGrid.innerHTML = `
+      ${stat('Base Objects', s.baseObjects)}
+      ${stat('Client Objects', s.clientObjects)}
+      ${stat('Common', s.common)}
+      ${stat('Changed', s.changed, true)}
+      ${stat('Only in Base', s.onlyInBase)}
+      ${stat('Only in Client', s.onlyInClient)}
+      ${stat('Total Hours', formatHours(s.totalHours), true)}
+    `;
+
+    currentRows = result.objects.slice();
+    sortRows();
+    renderTable();
+  }
+
+  function stat(label, value, hi) {
+    return `<div class="stat ${hi ? 'highlight':''}">
+      <div class="label">${label}</div>
+      <div class="value">${value}</div>
+    </div>`;
+  }
+  function formatHours(h) { return Number(h).toLocaleString(undefined, { maximumFractionDigits: 1 }); }
+
+  const COLS = [
+    { key: 'objType', title: 'Type', kind: 'text' },
+    { key: 'objId', title: 'ID', kind: 'numeric' },
+    { key: 'name', title: 'Name', kind: 'name' },
+    { key: 'baseLines', title: 'Base Lines', kind: 'numeric' },
+    { key: 'clientLines', title: 'Client Lines', kind: 'numeric' },
+    { key: 'added', title: '+', kind: 'numeric' },
+    { key: 'removed', title: '−', kind: 'numeric' },
+    { key: 'changed', title: 'Δ Lines', kind: 'numeric' },
+    { key: 'pctChanged', title: '% Changed', kind: 'numeric' },
+    { key: 'bracket', title: 'Bracket', kind: 'bracket' },
+    { key: 'hours', title: 'Hours', kind: 'numeric' },
+  ];
+
+  function renderTable() {
+    const thead = els.table.querySelector('thead');
+    const tbody = els.table.querySelector('tbody');
+
+    thead.innerHTML = '<tr>' + COLS.map(c => {
+      let cls = '';
+      if (currentSort.col === c.key) cls = currentSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc';
+      return `<th data-col="${c.key}" class="${cls}">${c.title}</th>`;
+    }).join('') + '</tr>';
+    thead.querySelectorAll('th').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (currentSort.col === col) {
+          currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort = { col, dir: col === 'pctChanged' || col === 'changed' || col === 'hours' ? 'desc' : 'asc' };
+        }
+        sortRows();
+        renderTable();
+      });
+    });
+
+    const filterText = els.filter.value.trim().toLowerCase();
+    const rows = filterText
+      ? currentRows.filter(r =>
+          String(r.objType).toLowerCase().includes(filterText)
+          || String(r.objId).includes(filterText)
+          || String(r.name).toLowerCase().includes(filterText))
+      : currentRows;
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${escape(r.objType)}</td>
+        <td class="numeric">${r.objId}</td>
+        <td class="name">${escape(r.name)}</td>
+        <td class="numeric">${r.baseLines}</td>
+        <td class="numeric">${r.clientLines}</td>
+        <td class="numeric">${r.added}</td>
+        <td class="numeric">${r.removed}</td>
+        <td class="numeric">${r.changed}</td>
+        <td class="numeric">${Number(r.pctChanged).toFixed(2)}%</td>
+        <td class="bracket-${r.bracket}">${r.bracket}</td>
+        <td class="numeric">${Number(r.hours).toFixed(2)}</td>
+      </tr>
+    `).join('');
+  }
+
+  els.filter.addEventListener('input', renderTable);
+
+  function sortRows() {
+    const { col, dir } = currentSort;
+    currentRows.sort((a, b) => {
+      const av = a[col], bv = b[col];
+      let cmp;
+      if (typeof av === 'number' && typeof bv === 'number') cmp = av - bv;
+      else cmp = String(av).localeCompare(String(bv));
+      return dir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  function escape(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  // ----------------------- CSV export
+  els.csvBtn.addEventListener('click', () => {
+    if (!currentRows.length) return;
+    const headers = COLS.map(c => c.title);
+    const lines = [headers.join(',')];
+    currentRows.forEach(r => {
+      lines.push(COLS.map(c => csvCell(r[c.key])).join(','));
+    });
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `nav-bc-estimate-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  function csvCell(v) {
+    const s = v == null ? '' : String(v);
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  refreshRunBtn();
+})();
+</script>
+</body>
+</html>

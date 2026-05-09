@@ -1,0 +1,20 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "rewrite": "/index.html"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
+  "mimeTypes": {
+    ".html": "text/html; charset=utf-8"
+  }
+}
